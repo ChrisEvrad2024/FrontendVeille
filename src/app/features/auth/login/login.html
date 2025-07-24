@@ -1,9 +1,23 @@
-<!-- ===== src/app/features/auth/login/login.html ===== -->
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
       <h1>Connexion</h1>
       <p>Connectez-vous à votre compte yaoundeConnect</p>
+      
+      <!-- Indicateur de statut serveur -->
+      <!--<div class="server-status" [class]="serverStatus()">
+        @switch (serverStatus()) {
+          @case ('checking') {
+            <span>🔄 Vérification du serveur...</span>
+          }
+          @case ('online') {
+            <span>✅ Serveur connecté ({{environment.apiUrl}})</span>
+          }
+          @case ('offline') {
+            <span>❌ Serveur hors ligne - <button type="button" (click)="recheckServer()" class="retry-btn">Réessayer</button></span>
+          }
+        }
+      </div>-->
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
@@ -50,15 +64,27 @@
       <button
         type="submit"
         class="login-btn"
-        [disabled]="isLoading() || loginForm.invalid"
+        [disabled]="isLoading() || loginForm.invalid || serverStatus() === 'offline'"
       >
         @if (isLoading()) {
           <app-loading-spinner></app-loading-spinner>
-          Connexion...
+          Connexion en cours...
         } @else {
           Se connecter
         }
       </button>
+
+      <!-- Bouton de test -->
+      @if (serverStatus() === 'online') {
+        <button
+          type="button"
+          class="test-btn"
+          (click)="testLogin()"
+          [disabled]="isLoading()"
+        >
+          🧪 Test avec compte de démonstration
+        </button>
+      }
     </form>
 
     <div class="login-footer">
@@ -66,6 +92,11 @@
         Pas encore de compte ?
         <a routerLink="/auth/register">Créer un compte</a>
       </p>
+      
+      <!-- Infos de débogage -->
+      <div class="debug-info">
+         <!--<small>Backend: {{ environment.apiUrl }}</small>-->
+      </div>
     </div>
   </div>
 </div>

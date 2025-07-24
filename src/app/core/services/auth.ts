@@ -1,16 +1,30 @@
-// ===== 1. src/app/core/services/auth.ts =====
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { User, AuthResponse, LoginRequest, RegisterRequest } from '../models/user.model';
+import { BehaviorSubject, Observable, catchError, map, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { 
+  User, 
+  AuthResponse, 
+  LoginRequest, 
+  RegisterRequest,
+  VerifyEmailRequest,
+  ResendVerificationRequest,
+  ApiResponse 
+} from '../models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private readonly apiUrl = environment.apiUrl;
+
   // État d'authentification avec signals (Angular 17+)
   public isAuthenticated = signal<boolean>(false);
   public currentUser = signal<User | null>(null);
+  public isLoading = signal<boolean>(false);
   
   // Observable pour compatibilité avec les anciens patterns
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
@@ -19,7 +33,7 @@ export class AuthService {
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private router: Router) {
+  constructor() {
     this.checkStoredAuth();
   }
 
@@ -31,73 +45,123 @@ export class AuthService {
     const userData = this.getStoredUser();
     
     if (token && userData) {
-      this.setAuthState(userData, token);
+      // Vérifier si le token est toujours valide
+      this.verifyToken().subscribe({
+        next: (response) => {
+          if (response.data) {
+            this.setAuthState(response.data, token);
+          } else {
+            this.clearAuthState();
+          }
+        },
+        error: () => {
+          this.clearAuthState();
+        }
+      });
     }
   }
 
   /**
-   * Simuler une connexion (pour le moment, sans API)
+   * Vérifier la validité du token
    */
-  login(credentials: LoginRequest): Observable<AuthResponse> {
-    return new Observable(observer => {
-      // TODO: Remplacer par un vrai appel API au Micro-Sprint 4
-      setTimeout(() => {
-        // Simulation d'une réponse d'API
-        const mockResponse: AuthResponse = {
-          message: 'Connexion réussie',
-          user: {
-            id: 1,
-            name: 'John Doe',
-            email: credentials.email,
-            role: 'membre',
-            is_email_verified: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          token: 'mock-jwt-token-' + Date.now()
-        };
-
-        this.setAuthState(mockResponse.user, mockResponse.token);
-        observer.next(mockResponse);
-        observer.complete();
-      }, 1000); // Simuler une latence réseau
+  private verifyToken(): Observable<ApiResponse<User>> {
+    return this.http.get<ApiResponse<User>>(`${this.apiUrl}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`
+      }
     });
   }
 
   /**
-   * Simuler une inscription
+   * Connexion utilisateur
    */
-  register(userData: RegisterRequest): Observable<AuthResponse> {
-    return new Observable(observer => {
-      // TODO: Remplacer par un vrai appel API au Micro-Sprint 4
-      setTimeout(() => {
-        const mockResponse: AuthResponse = {
-          message: 'Inscription réussie',
-          user: {
-            id: 2,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role as any || 'membre',
-            is_email_verified: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          token: 'mock-jwt-token-' + Date.now()
-        };
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    this.isLoading.set(true);
+    
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/login`, credentials)
+      .pipe(
+        map(response => {
+          this.isLoading.set(false);
+          if (response.data) {
+            this.setAuthState(response.data.user, response.data.token);
+            return response.data;
+          }
+          throw new Error('Réponse API invalide');
+        }),
+        catchError((error: HttpErrorResponse) => {
+          this.isLoading.set(false);
+          return this.handleAuthError(error);
+        })
+      );
+  }
 
-        this.setAuthState(mockResponse.user, mockResponse.token);
-        observer.next(mockResponse);
-        observer.complete();
-      }, 1000);
-    });
+  /**
+   * Inscription utilisateur
+   */
+  register(userData: RegisterRequest): Observable<ApiResponse<{ user: User }>> {
+    this.isLoading.set(true);
+    
+    return this.http.post<ApiResponse<{ user: User }>>(`${this.apiUrl}/auth/register`, userData)
+      .pipe(
+        map(response => {
+          this.isLoading.set(false);
+          return response;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          this.isLoading.set(false);
+          return this.handleAuthError(error);
+        })
+      );
+  }
+
+  /**
+   * Vérification d'email
+   */
+  verifyEmail(token: string): Observable<ApiResponse<User>> {
+    return this.http.get<ApiResponse<User>>(`${this.apiUrl}/auth/verify-email?token=${token}`)
+      .pipe(
+        map(response => {
+          if (response.data) {
+            // Connecter automatiquement l'utilisateur après vérification
+            const mockToken = 'temp-token-after-verification';
+            this.setAuthState(response.data, mockToken);
+          }
+          return response;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          return this.handleAuthError(error);
+        })
+      );
+  }
+
+  /**
+   * Renvoyer l'email de vérification
+   */
+  resendVerificationEmail(email: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/auth/resend-verification`, { email })
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          return this.handleAuthError(error);
+        })
+      );
   }
 
   /**
    * Déconnexion
    */
   logout(): void {
-    this.clearAuthState();
-    this.router.navigate(['/auth/login']);
+    // Optionnel: appeler l'API de déconnexion
+    this.http.post(`${this.apiUrl}/auth/logout`, {}).subscribe({
+      complete: () => {
+        this.clearAuthState();
+        this.router.navigate(['/auth/login']);
+      },
+      error: () => {
+        // Déconnecter même en cas d'erreur API
+        this.clearAuthState();
+        this.router.navigate(['/auth/login']);
+      }
+    });
   }
 
   /**
@@ -166,5 +230,28 @@ export class AuthService {
     
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+  }
+
+  /**
+   * Gérer les erreurs d'authentification
+   */
+  private handleAuthError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'Une erreur est survenue';
+
+    if (error.error && error.error.detail) {
+      errorMessage = error.error.detail;
+    } else if (error.error && error.error.message) {
+      errorMessage = error.error.message;
+    } else if (error.status === 0) {
+      errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+    } else if (error.status === 401) {
+      errorMessage = 'Email ou mot de passe incorrect';
+    } else if (error.status === 409) {
+      errorMessage = 'Un compte avec cet email existe déjà';
+    } else if (error.status >= 500) {
+      errorMessage = 'Erreur du serveur. Veuillez réessayer plus tard.';
+    }
+
+    return throwError(() => new Error(errorMessage));
   }
 }
