@@ -1,1 +1,35 @@
-<p>profile works!</p>
+<!-- ===== src/app/features/auth/profile/profile.html ===== -->
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar">
+        {{ (authService.currentUser()?.name || 'U')[0].toUpperCase() }}
+      </div>
+      <div class="profile-info">
+        <h1>{{ authService.currentUser()?.name }}</h1>
+        <p class="profile-email">{{ authService.currentUser()?.email }}</p>
+        <span class="profile-role">{{ authService.currentUser()?.role }}</span>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="stat-card">
+        <h3>POI Créés</h3>
+        <p class="stat-number">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Commentaires</h3>
+        <p class="stat-number">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Favoris</h3>
+        <p class="stat-number">0</p>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <button class="btn-secondary">Modifier le profil</button>
+      <button class="btn-danger" (click)="authService.logout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>

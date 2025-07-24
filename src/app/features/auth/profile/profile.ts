@@ -1,11 +1,15 @@
-import { Component } from '@angular/core';
+// ===== Mise à jour src/app/features/auth/profile/profile.ts =====
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-profile',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './profile.html',
-  styleUrl: './profile.scss'
+  styleUrls: ['./profile.scss']
 })
-export class Profile {
-
+export class ProfileComponent {
+  public authService = inject(AuthService);
 }

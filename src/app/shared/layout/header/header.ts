@@ -1,11 +1,20 @@
-import { Component } from '@angular/core';
+// ===== Mise à jour src/app/shared/layout/header/header.ts =====
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-header',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule, RouterModule],
   templateUrl: './header.html',
-  styleUrl: './header.scss'
+  styleUrls: ['./header.scss']
 })
-export class Header {
+export class HeaderComponent {
+  public authService = inject(AuthService);
 
+  logout(): void {
+    this.authService.logout();
+  }
 }

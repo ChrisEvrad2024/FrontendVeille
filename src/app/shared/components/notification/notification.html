@@ -1,0 +1,43 @@
+<!-- ===== src/app/shared/components/notification/notification.html ===== -->
+<div class="notifications-container">
+  @for (notification of notificationService.notifications(); track notification.id) {
+    <div class="notification" [class]="notification.type">
+      <!-- Icône -->
+      <div class="notification-icon">
+        @switch (notification.type) {
+          @case ('success') { ✅ }
+          @case ('error') { ❌ }
+          @case ('warning') { ⚠️ }
+          @case ('info') { ℹ️ }
+        }
+      </div>
+
+      <!-- Contenu -->
+      <div class="notification-content">
+        @if (notification.title) {
+          <div class="notification-title">{{ notification.title }}</div>
+        }
+        <p class="notification-message">{{ notification.message }}</p>
+        
+        @if (notification.action) {
+          <div class="notification-actions">
+            <button 
+              class="primary"
+              (click)="notification.action!.handler(); notificationService.removeNotification(notification.id)"
+            >
+              {{ notification.action.label }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Bouton fermer -->
+      <button 
+        class="notification-close"
+        (click)="notificationService.removeNotification(notification.id)"
+      >
+        ×
+      </button>
+    </div>
+  }
+</div>

@@ -1,1 +1,45 @@
-<p>header works!</p>
+<!-- ===== src/app/shared/layout/header/header.html ===== -->
+<header class="header">
+  <div class="header-container">
+    <!-- Logo -->
+    <a routerLink="/" class="header-logo">
+      <span class="logo-icon"></span>
+      <span>yaoundeConnect</span>
+    </a>
+
+    <!-- Navigation -->
+    <nav class="header-nav">
+      <a routerLink="/poi" routerLinkActive="active">Explorer</a>
+      <a routerLink="/poi/map" routerLinkActive="active">Carte</a>
+      @if (authService.canCreatePOI()) {
+        <a routerLink="/poi/create" routerLinkActive="active">Ajouter un POI</a>
+      }
+      @if (authService.canModerate()) {
+        <a routerLink="/admin/moderation" routerLinkActive="active">Modération</a>
+      }
+    </nav>
+
+    <!-- Utilisateur -->
+    <div class="header-user">
+      @if (authService.isAuthenticated()) {
+        <div class="user-info">
+          <div class="user-avatar">
+            {{ (authService.currentUser()?.name || 'U')[0].toUpperCase() }}
+          </div>
+          <div class="user-details">
+            <div class="user-name">{{ authService.currentUser()?.name }}</div>
+            <div class="user-role">{{ authService.currentUser()?.role }}</div>
+          </div>
+        </div>
+        <button class="logout-btn" (click)="logout()">
+          Déconnexion
+        </button>
+      } @else {
+        <div class="auth-buttons">
+          <a routerLink="/auth/login" class="btn-outline">Connexion</a>
+          <a routerLink="/auth/register" class="btn-primary">Inscription</a>
+        </div>
+      }
+    </div>
+  </div>
+</header>
