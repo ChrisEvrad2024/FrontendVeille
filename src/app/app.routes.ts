@@ -5,7 +5,7 @@ import { moderatorGuard, collecteurGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
     // Redirection par défaut
-    { path: '', redirectTo: '/poi', pathMatch: 'full' },
+    { path: '', redirectTo: '/map-display', pathMatch: 'full' },
 
     // Routes d'authentification
     {
@@ -25,6 +25,12 @@ export const routes: Routes = [
                 canActivate: [authGuard]
             }
         ]
+    },
+
+    // Route pour map-display
+    {
+        path: 'map-display',
+        loadComponent: () => import('./shared/components/map-display/map-display').then(m => m.MapDisplayComponent)
     },
 
     // Routes POI (publiques et protégées)
@@ -51,6 +57,6 @@ export const routes: Routes = [
     //     ]
     // },
 
-    // // Route 404
-    { path: '**', redirectTo: '/poi' }
+    // Route 404
+    { path: '**', redirectTo: '/map-display' }
 ];

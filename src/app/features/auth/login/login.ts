@@ -27,8 +27,7 @@ export class LoginComponent {
   public serverStatus = signal<'checking' | 'online' | 'offline'>('checking');
 
   public loginForm: FormGroup = this.fb.group({
-    email: ['test.postman@example.com', [Validators.required, Validators.email]], // Pré-rempli pour test
-    password: ['TestPassword123!', [Validators.required, Validators.minLength(8)]] // Pré-rempli pour test
+
   });
 
   constructor() {
