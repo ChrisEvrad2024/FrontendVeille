@@ -92,19 +92,48 @@ export interface PoiUpdateRequest {
 }
 
 export interface PoiSearchFilters {
+    // Recherche textuelle
     q?: string;
+
+    // Filtres de localisation
     quartier_id?: number;
     category_id?: number;
+
+    // Filtres de type
     is_restaurant?: boolean;
     is_transport?: boolean;
     is_stadium?: boolean;
     is_booking?: boolean;
     is_verified?: boolean;
+
+    // Statut
     status?: 'pending' | 'approved' | 'rejected';
+
+    // Pagination
     page?: number;
     limit?: number;
-    sort_by?: 'name' | 'created_at' | 'rating' | 'rating_count';
+
+    // Tri
+    sort_by?: 'name' | 'created_at' | 'rating' | 'rating_count' | 'distance';
     sort_order?: 'asc' | 'desc';
+
+    // Filtres avancés
+    rating_min?: number;
+    rating_max?: number;
+
+    // Géolocalisation
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+
+    // Pagination cursor
+    cursor?: string;
+    useCursor?: boolean;
+
+    // Autres filtres possibles
+    created_by?: number;
+    user_id?: number;
+    is_favorite?: boolean;
 }
 
 export interface NearbyPoiRequest {

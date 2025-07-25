@@ -1,1 +1,321 @@
-<p>poi-list works!</p>
+<!-- ===== src/app/features/poi/poi-list/poi-list.html ===== -->
+<div class="poi-list-container">
+  
+  <!-- En-tête avec statistiques -->
+  <div class="poi-list-header">
+    <div class="header-content">
+      <h1>Points d'Intérêt à Yaoundé</h1>
+      <div class="stats">
+        <span class="stat">📍 {{ stats().filtered }} POI</span>
+        <span class="stat">🏷️ {{ stats().categories }} catégories</span>
+        <span class="stat">📍 {{ stats().quartiers }} quartiers</span>
+        @if (stats().averageRating > 0) {
+          <span class="stat">⭐ {{ stats().averageRating.toFixed(1) }}/5</span>
+        }
+      </div>
+    </div>
+    
+    <!-- Bouton de rafraîchissement -->
+    <button class="refresh-btn" (click)="refresh()" [disabled]="isLoading()">
+      <span [class.spinning]="isLoading()">🔄</span>
+    </button>
+  </div>
+
+  <!-- Barre de recherche et filtres -->
+  <div class="search-filters">
+    <!-- Recherche -->
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Rechercher un POI, une catégorie..."
+        [value]="searchTerm()"
+        (input)="onSearch($any($event.target).value)"
+        class="search-input"
+      />
+    </div>
+
+    <!-- Contrôles de vue et tri -->
+    <div class="view-controls">
+      <!-- Mode de vue -->
+      <div class="view-mode-buttons">
+        <button 
+          class="view-btn"
+          [class.active]="viewMode() === 'grid'"
+          (click)="changeViewMode('grid')"
+          title="Vue grille"
+        >
+          ⊞
+        </button>
+        <button 
+          class="view-btn"
+          [class.active]="viewMode() === 'list'"
+          (click)="changeViewMode('list')"
+          title="Vue liste"
+        >
+          ☰
+        </button>
+        <button 
+          class="view-btn"
+          [class.active]="viewMode() === 'map'"
+          (click)="changeViewMode('map')"
+          title="Vue carte"
+        >
+          🗺️
+        </button>
+      </div>
+
+      <!-- Tri -->
+      <div class="sort-controls">
+        <label>Trier par:</label>
+        <select 
+          [value]="sortBy()" 
+          (change)="changeSorting($any($event.target).value)"
+          class="sort-select"
+        >
+          <option value="name">Nom</option>
+          <option value="rating">Note</option>
+          <option value="created_at">Date</option>
+          @if (userLocation()) {
+            <option value="distance">Distance</option>
+          }
+        </select>
+        <button 
+          class="sort-order-btn"
+          (click)="changeSorting(sortBy())"
+          title="Inverser l'ordre"
+        >
+          {{ sortOrder() === 'asc' ? '↑' : '↓' }}
+        </button>
+      </div>
+
+      <!-- Bouton filtres -->
+      <button 
+        class="filters-toggle"
+        (click)="showFilters.set(!showFilters())"
+        [class.active]="showFilters()"
+      >
+        🎛️ Filtres
+        @if (selectedCategories().length + selectedQuartiers().length > 0) {
+          <span class="filter-count">{{ selectedCategories().length + selectedQuartiers().length }}</span>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- Panneau de filtres -->
+  @if (showFilters()) {
+    <div class="filters-panel">
+      <div class="filters-content">
+        
+        <!-- Filtres par catégorie -->
+        <div class="filter-group">
+          <h3>Catégories</h3>
+          <div class="filter-options">
+            @for (category of categories(); track category.id) {
+              <label class="filter-option">
+                <input
+                  type="checkbox"
+                  [checked]="selectedCategories().includes(category.id)"
+                  (change)="toggleCategory(category.id)"
+                />
+                <span>{{ category.name }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Filtres par quartier -->
+        <div class="filter-group">
+          <h3>Quartiers</h3>
+          <div class="filter-options">
+            @for (quartier of quartiers(); track quartier.id) {
+              <label class="filter-option">
+                <input
+                  type="checkbox"
+                  [checked]="selectedQuartiers().includes(quartier.id)"
+                  (change)="toggleQuartier(quartier.id)"
+                />
+                <span>{{ quartier.name }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Autres filtres -->
+        <div class="filter-group">
+          <h3>Options</h3>
+          <label class="filter-option">
+            <input
+              type="checkbox"
+              [checked]="showOnlyFavorites()"
+              (change)="showOnlyFavorites.set($any($event.target).checked)"
+            />
+            <span>❤️ Mes favoris uniquement</span>
+          </label>
+        </div>
+
+        <!-- Actions des filtres -->
+        <div class="filter-actions">
+          <button class="btn-reset" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- État de chargement -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <app-loading-spinner size="60px"></app-loading-spinner>
+      <p>Chargement des points d'intérêt...</p>
+    </div>
+  }
+
+  <!-- État d'erreur -->
+  @if (hasError()) {
+    <div class="error-state">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <h3>Erreur de chargement</h3>
+        <p>Impossible de charger les points d'intérêt.</p>
+        <button class="retry-btn" (click)="refresh()">
+          Réessayer
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Contenu principal -->
+  @if (!isLoading() && !hasError()) {
+    
+    <!-- Aucun résultat -->
+    @if (filteredPois().length === 0) {
+      <div class="no-results">
+        <div class="no-results-content">
+          <span class="no-results-icon">🔍</span>
+          <h3>Aucun POI trouvé</h3>
+          <p>Essayez de modifier vos critères de recherche.</p>
+          <button class="btn-reset" (click)="resetFilters()">
+            Réinitialiser les filtres
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Vue carte -->
+    @if (viewMode() === 'map' && filteredPois().length > 0) {
+      <div class="map-view">
+        <app-map-display
+          [pois]="filteredPois()"
+          [showUserLocation]="true"
+          [height]="'600px'"
+          (poiSelected)="onMapPoiSelected($event)"
+          (userLocationFound)="userLocation.set($event)"
+        ></app-map-display>
+      </div>
+    }
+
+    <!-- Vue grille -->
+    @if (viewMode() === 'grid' && filteredPois().length > 0) {
+      <div class="grid-view">
+        <div class="poi-grid">
+          @for (poi of paginatedPois(); track poi.id) {
+            <app-poi-card
+              [poi]="poi"
+              [userLocation]="userLocation()"
+              [showDistance]="showDistance()"
+              (poiClick)="onPoiClick($event)"
+              (favoriteToggle)="onFavoriteToggle($event)"
+              (shareClick)="onPoiShare($event)"
+            ></app-poi-card>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Vue liste -->
+    @if (viewMode() === 'list' && filteredPois().length > 0) {
+      <div class="list-view">
+        <div class="poi-list">
+          @for (poi of paginatedPois(); track poi.id) {
+            <app-poi-card
+              [poi]="poi"
+              [userLocation]="userLocation()"
+              [showDistance]="showDistance()"
+              [compact]="true"
+              class="list-mode"
+              (poiClick)="onPoiClick($event)"
+              (favoriteToggle)="onFavoriteToggle($event)"
+              (shareClick)="onPoiShare($event)"
+            ></app-poi-card>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1 && viewMode() !== 'map') {
+      <div class="pagination">
+        <div class="pagination-info">
+          Affichage {{ (currentPage() - 1) * itemsPerPage() + 1 }} - 
+          {{ Math.min(currentPage() * itemsPerPage(), totalItems()) }} 
+          sur {{ totalItems() }} POI
+        </div>
+        
+        <div class="pagination-controls">
+          <!-- Première page -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(1)"
+          >
+            ⏮️
+          </button>
+
+          <!-- Page précédente -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            ◀️
+          </button>
+
+          <!-- Pages numérotées -->
+          @for (page of paginationPages; track page) {
+            @if (page === -1) {
+              <span class="page-ellipsis">...</span>
+            } @else {
+              <button 
+                class="page-btn"
+                [class.active]="page === currentPage()"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            }
+          }
+
+          <!-- Page suivante -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            ▶️
+          </button>
+
+          <!-- Dernière page -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(totalPages())"
+          >
+            ⏭️
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

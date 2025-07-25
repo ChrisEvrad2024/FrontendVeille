@@ -1,10 +1,10 @@
-// ===== 10. src/app/app.routes.ts =====
+// ===== src/app/app.routes.ts - MISE À JOUR =====
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { moderatorGuard, collecteurGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
-    // Redirection par défaut
+    // Redirection par défaut vers la liste des POI
     { path: '', redirectTo: '/map-display', pathMatch: 'full' },
 
     // Routes d'authentification
@@ -27,35 +27,35 @@ export const routes: Routes = [
         ]
     },
 
-    // Route pour map-display
+    // Route pour map-display standalone
     {
         path: 'map-display',
         loadComponent: () => import('./shared/components/map-display/map-display').then(m => m.MapDisplayComponent)
     },
 
-    // Routes POI (publiques et protégées)
-    // {
-    //     path: 'poi',
-    //     children: [
-    //         {
-    //             path: '',
-    //             loadComponent: () => import('./features/poi/poi-list/poi-list').then(m => m.PoiListComponent)
-    //         },
-    //         {
-    //             path: 'map',
-    //             loadComponent: () => import('./features/poi/poi-map-view/poi-map-view').then(m => m.PoiMapViewComponent)
-    //         },
-    //         {
-    //             path: 'create',
-    //             loadComponent: () => import('./features/poi/poi-create/poi-create').then(m => m.PoiCreateComponent),
-    //             canActivate: [collecteurGuard]
-    //         },
-    //         {
-    //             path: ':id',
-    //             loadComponent: () => import('./features/poi/poi-detail/poi-detail').then(m => m.PoiDetailComponent)
-    //         }
-    //     ]
-    // },
+    // Routes POI (maintenant actives)
+    {
+        path: 'poi',
+        children: [
+            {
+                path: '',
+                loadComponent: () => import('./features/poi/poi-list/poi-list').then(m => m.PoiListComponent)
+            },
+            {
+                path: 'map',
+                loadComponent: () => import('./features/poi/poi-map-view/poi-map-view').then(m => m.PoiMapView)
+            },
+            {
+                path: 'create',
+                loadComponent: () => import('./features/poi/poi-create/poi-create').then(m => m.PoiCreate),
+                canActivate: [collecteurGuard]
+            },
+            {
+                path: ':id',
+                loadComponent: () => import('./features/poi/poi-detail/poi-detail').then(m => m.PoiDetail)
+            }
+        ]
+    },
 
     // Route 404
     { path: '**', redirectTo: '/map-display' }

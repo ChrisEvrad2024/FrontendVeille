@@ -1,6 +1,275 @@
+// ===== src/app/shared/components/map-display/map-display.scss =====
 .map-container {
-  height: 500px;
   width: 100%;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+// Styles pour les popups POI
+:host ::ng-deep {
+  .poi-popup {
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .leaflet-popup-content {
+      margin: 0;
+      padding: 0;
+      min-width: 280px;
+    }
+
+    .poi-popup-content {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      .poi-popup-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 16px;
+
+        .poi-name {
+          margin: 0 0 8px 0;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 1.2;
+        }
+
+        .poi-rating {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+
+          .stars {
+            font-weight: 600;
+          }
+
+          .rating-count {
+            opacity: 0.9;
+          }
+        }
+      }
+
+      .poi-popup-body {
+        padding: 16px;
+
+        .poi-category {
+          margin-bottom: 12px;
+
+          .category-badge {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+        }
+
+        .poi-location {
+          color: #6b7280;
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+
+        .poi-description {
+          color: #4b5563;
+          font-size: 14px;
+          line-height: 1.5;
+          margin-bottom: 12px;
+        }
+
+        .poi-services {
+          .services-list {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+
+            .service-tag {
+              background: #e5e7eb;
+              color: #374151;
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-size: 12px;
+            }
+
+            .more-services {
+              color: #6b7280;
+              font-size: 12px;
+              font-style: italic;
+            }
+
+            .no-services {
+              color: #9ca3af;
+              font-size: 12px;
+              font-style: italic;
+            }
+          }
+        }
+      }
+
+      .poi-popup-actions {
+        padding: 12px 16px;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 8px;
+
+        button {
+          flex: 1;
+          padding: 8px 12px;
+          border: none;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &.btn-details {
+            background: #3b82f6;
+            color: white;
+
+            &:hover {
+              background: #2563eb;
+            }
+          }
+
+          &.btn-favorite {
+            background: white;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+
+            &:hover {
+              background: #f3f4f6;
+              color: #374151;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Styles pour le popup de position utilisateur
+  .user-location-popup {
+    .leaflet-popup-content-wrapper {
+      background: #3b82f6;
+      color: white;
+      border-radius: 8px;
+    }
+
+    .leaflet-popup-tip {
+      background: #3b82f6;
+    }
+  }
+
+  // Animation des marqueurs personnalisés
+  .custom-poi-icon {
+    animation: markerAppear 0.3s ease-out;
+  }
+
+  @keyframes markerAppear {
+    from {
+      transform: scale(0) translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  // Styles pour les contrôles de la carte
+  .leaflet-control-zoom {
+    border: none !important;
+    
+    a {
+      background: white !important;
+      border: 1px solid #d1d5db !important;
+      color: #374151 !important;
+      font-weight: 600 !important;
+      
+      &:hover {
+        background: #f3f4f6 !important;
+      }
+    }
+  }
+
+  // Styles pour le clustering (si utilisé plus tard)
+  .marker-cluster {
+    background: rgba(59, 130, 246, 0.8) !important;
+    border: 3px solid white !important;
+    border-radius: 50% !important;
+    color: white !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    line-height: 1 !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+
+    &:hover {
+      background: rgba(59, 130, 246, 1) !important;
+    }
+  }
+}
+
+// Loader pour la géolocalisation
+.map-loading {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  color: #6b7280;
+  z-index: 1000;
+
+  &::before {
+    content: '📍';
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  :host ::ng-deep {
+    .poi-popup {
+      .leaflet-popup-content {
+        min-width: 250px;
+      }
+
+      .poi-popup-content {
+        .poi-popup-header {
+          padding: 12px;
+
+          .poi-name {
+            font-size: 16px;
+          }
+        }
+
+        .poi-popup-body {
+          padding: 12px;
+        }
+
+        .poi-popup-actions {
+          flex-direction: column;
+
+          button {
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
 }

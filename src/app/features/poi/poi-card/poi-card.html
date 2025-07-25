@@ -1,1 +1,128 @@
-<p>poi-card works!</p>
+<!-- ===== src/app/features/poi/poi-card/poi-card.html ===== -->
+<div class="poi-card" 
+     [class.compact]="compact"
+     [class.clickable]="true"
+     (click)="onCardClick()">
+  
+  <!-- Image du POI -->
+  <div class="poi-image">
+    <img 
+      [src]="imageUrl" 
+      [alt]="poi.name"
+      (error)="onImageError($event)"
+      loading="lazy"
+    />
+    
+    <!-- Badges overlay -->
+    <div class="poi-badges">
+      <!-- Badge de statut -->
+      @if (statusBadge) {
+        <span class="status-badge" [class]="statusBadge.class">
+          {{ statusBadge.text }}
+        </span>
+      }
+      
+      <!-- Badge de catégorie -->
+      <span class="category-badge" [style.background-color]="categoryColor">
+        {{ categoryIcon }} {{ poi.Category?.name || 'Non catégorisé' }}
+      </span>
+      
+      <!-- Distance -->
+      @if (distance) {
+        <span class="distance-badge">📍 {{ distance }}</span>
+      }
+    </div>
+
+    <!-- Bouton favori -->
+    @if (canToggleFavorite) {
+      <button 
+        class="favorite-btn"
+        [class.active]="isFavorite"
+        (click)="onFavoriteClick($event)"
+        [title]="isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      >
+        {{ isFavorite ? '❤️' : '🤍' }}
+      </button>
+    }
+  </div>
+
+  <!-- Contenu de la carte -->
+  <div class="poi-content">
+    <!-- En-tête -->
+    <div class="poi-header">
+      <h3 class="poi-name">{{ poi.name }}</h3>
+      
+      <!-- Note et avis -->
+      <div class="poi-rating">
+        <div class="rating-display">
+          <span class="stars">{{ ratingStars }}</span>
+          <span class="rating-value">{{ formattedRating }}</span>
+        </div>
+        <span class="rating-count">({{ poi.rating_count || 0 }})</span>
+      </div>
+    </div>
+
+    <!-- Localisation -->
+    <div class="poi-location">
+      <span class="quartier">📍 {{ poi.Quartier?.name || 'Quartier non spécifié' }}</span>
+    </div>
+
+    <!-- Description (mode non compact uniquement) -->
+    @if (!compact && poi.description) {
+      <div class="poi-description">
+        {{ poi.description.length > 100 ? (poi.description | slice:0:100) + '...' : poi.description }}
+      </div>
+    }
+
+    <!-- Services -->
+    @if (visibleServices.length > 0) {
+      <div class="poi-services">
+        <div class="services-list">
+          @for (service of visibleServices; track service.id) {
+            <span class="service-tag">{{ service.name }}</span>
+          }
+          @if (additionalServicesCount > 0) {
+            <span class="more-services">+{{ additionalServicesCount }}</span>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Prix (si restaurant) -->
+    @if (poi.is_restaurant && poi.Prices && poi.Prices.length > 0) {
+      <div class="poi-pricing">
+        <span class="price-indicator">
+          💰 {{ poi.Prices[0].price_name }}: {{ poi.Prices[0].amount }} FCFA
+        </span>
+      </div>
+    }
+
+    <!-- Badges spéciaux -->
+    @if (specialBadges.length > 0) {
+      <div class="special-badges">
+        @for (badge of specialBadges; track badge) {
+          <span class="special-badge">✨ {{ badge }}</span>
+        }
+      </div>
+    }
+
+    <!-- Actions de la carte -->
+    <div class="poi-actions">
+      <button 
+        class="btn-details"
+        [routerLink]="['/poi', poi.id]"
+        (click)="$event.stopPropagation()"
+      >
+        Voir détails
+      </button>
+      
+      <button 
+        class="btn-share"
+        (click)="onShareClick($event)"
+        title="Partager ce POI"
+      >
+        🔗
+      </button>
+    </div>
+  </div>
+</div>
